@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pl-PL">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Projekt Kwiatki</title>
+    <style>
+        :root {
+            --background-color: #f0f0f0;
+            --element-background-color: #fff;
+            --text-color: #333;
+            --primary-color: rgb(73, 145, 222);
+            --secondary-color: #DEEFF5;
+            --border-color: rgba(173, 216, 230);
+
+            --state-ok: #90EE90;
+            --state-underwatered: #FF5B61;
+            --state-overwatered: #26F7FD;
+
+            --border-radius: 10px;
+        }
+
+        body {
+            font-family: Open Sans, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--background-color);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--element-background-color);
+            padding: 20px;
+            margin: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .water-drop {
+            width: 200px;
+            height: 200px;
+            border-radius: 0 50% 50% 50%;
+            /* border: 1px solid var(--border-color); */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.3s ease-in-out;
+            margin: 30px;
+        }
+
+        .water-drop::after {
+            content: '';
+            display: block;
+            padding-top: 100%;
+        }
+
+        #moistureValue {
+            font-size: 2rem;
+            color: #fff;
+            font-weight: bold;
+            z-index: 1;
+
+        }
+
+        .plant-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--element-background-color);
+            padding: 20px;
+            margin: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80vw;
+        }
+
+        .plant {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin: 10px;
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+        }
+
+        .plant-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10% 0;
+            flex: 1
+        }
+
+        .plant-icon img {
+            height: 200px;
+            width: auto;
+            border-radius: var(--border-radius);
+        }
+
+        .plant-data {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            text-align: left;
+            margin: 10% 0;
+            flex: 2;
+        }
+
+        .plant-data h3 {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .plant-data p {
+            font-size: 1rem;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .plant-data .plant-state {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .plant {
+                flex-direction: column;
+            }
+
+            .plant-icon img {
+                height: 150px;
+            }
+
+            .plant-data {
+                text-align: center;
+            }
+
+            .container {
+                width: 80vw;
+            }
+        }
+    </style>
+    <script>
+        window.onload = function () {
+            getMoisturePercentageAsync();
+            checkPlantState();
+        }
+        
+        setInterval(() => {
+            getMoisturePercentageAsync();
+            checkPlantState();
+        }, 5000);
+
+        // Quick fix viewport height variable for better performance on mobile 
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+        window.addEventListener('resize', () => {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        });
+
+        function getMoisturePercentageAsync() {
+            fetch('/percents')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    updateMoistureLevel(data);
+                });
+        }
+
+        function updateMoistureLevel(percentage) {
+            const waterDrop = document.getElementById('waterDrop');
+            const moistureValue = document.getElementById('moistureValue');
+
+            moistureValue.textContent = `${percentage}%`;
+            const cutoff = 100 - percentage;
+
+            waterDrop.style.background = `linear-gradient(to bottom, var(--secondary-color) 0%, var(--secondary-color) ${cutoff}%, var(--primary-color) ${cutoff}%, var(--primary-color) 100%)`;
+        }
+
+        function checkPlantState() {
+            // find all plant elements
+            const plants = document.querySelectorAll('.plant');
+
+            // Loop through each plant
+            plants.forEach(plant => {
+                // Find moisture range
+                const moistureRange = plant.querySelector('.plant-range');
+                const moistureValues = moistureRange.querySelectorAll('span');
+
+                // Find moisture value
+                const moistureValue = document.getElementById('moistureValue').textContent;
+                const moistureValueInt = parseInt(moistureValue);
+
+                // Check if moisture value is within range
+                if (moistureValueInt >= parseInt(moistureValues[0].textContent) && moistureValueInt <= parseInt(moistureValues[1].textContent)) {
+                    plant.querySelector('.plant-state').textContent = 'OK';
+                    plant.style.backgroundColor = 'var(--state-ok)';
+                } else if (moistureValueInt < parseInt(moistureValues[0].textContent)) {
+                    plant.querySelector('.plant-state').textContent = 'ZBYT MAŁO WODY';
+                    plant.style.backgroundColor = 'var(--state-underwatered)';
+                } else if (moistureValueInt > parseInt(moistureValues[1].textContent)) {
+                    plant.querySelector('.plant-state').textContent = 'ZA DUŻO WODY';
+                    plant.style.backgroundColor = 'var(--state-overwatered)';
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="water-drop" id="waterDrop">
+            <span id="moistureValue">70%</span>
+        </div>
+    </div>
+    <div class="plant-container">
+        <div class="plant">
+            <div class="plant-icon">
+                <img src="assets/monstera.webp" alt="plant-icon" width="100px">
+            </div>
+            <div class="plant-data">
+                <h3 class="plant-name">Monstera</h3>
+                <p class="plant-range">Wilgotność gleby: <span class="plantMax">40%</span> - <span class="plantMax">80%</span></p>
+                <p class="plant-description">Dodatkowe info: umiarkowane, jak marszcza sie liscie tzn ze jest za sucho</p>
+                <p class="plant-state">OK</p>
+            </div>
+        </div>
+        <div class="plant">
+            <div class="plant-icon">
+                <img src="assets/draceana.jpg" alt="plant-icon" width="100px">
+            </div>
+            <div class="plant-data">
+                <h3 class="plant-name">Dracena</h3>
+                <p class="plant-range">Wilgotność gleby: <span class="plantMax">15%</span> - <span class="plantMax">60%</span></p>
+                <p class="plant-description">Dodatkowe info: Podlewanie 1-2 razy w tygodniu</p>
+                <p class="plant-state">OK</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
